@@ -18,5 +18,15 @@ class DatabaseSeeder extends Seeder
         //     'name' => 'Test User',
         //     'email' => 'test@example.com',
         // ]);
+
+        for ($i=0; $i < 100; $i++) { 
+            $model = new \App\Models\Product();
+            $model->name = fake()->domainName('product');
+            $model->description = fake()->text(200);
+            $model->image = fake()->imageUrl();
+            $model->category_id = 1;
+            $model->save();
+            
+        }
     }
 }

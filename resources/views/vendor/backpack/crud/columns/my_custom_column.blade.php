@@ -1,0 +1,1 @@
+Product ID: <strong>{{$entry->id}}</strong>
