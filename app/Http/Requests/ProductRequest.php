@@ -4,15 +4,13 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ProductRequest extends FormRequest
-{
+class ProductRequest extends FormRequest {
     /**
      * Determine if the user is authorized to make this request.
      *
      * @return bool
      */
-    public function authorize()
-    {
+    public function authorize() {
         // only allow updates if the user is logged in
         return backpack_auth()->check();
     }
@@ -22,11 +20,17 @@ class ProductRequest extends FormRequest
      *
      * @return array
      */
-    public function rules()
-    {
-        return [
-            // 'name' => 'required|min:5|max:255'
+    public function rules() {
+        $rules = [
+            'name' => 'required|min:5|max:255',
+            'category' => 'required|int|exists:categories,id',
         ];
+        if ($this->isMethod('post')) {
+            $rules['image'] = 'required|file|mimes:jpg,jpgeg,png,webp,svg|max:1024';
+        } else {
+            $rules['image'] = 'nullable|file|mimes:jpg,jpgeg,png,webp,svg|max:1024';
+        }
+        return $rules;
     }
 
     /**
@@ -34,8 +38,7 @@ class ProductRequest extends FormRequest
      *
      * @return array
      */
-    public function attributes()
-    {
+    public function attributes() {
         return [
             //
         ];
@@ -46,8 +49,7 @@ class ProductRequest extends FormRequest
      *
      * @return array
      */
-    public function messages()
-    {
+    public function messages() {
         return [
             //
         ];

@@ -18,6 +18,10 @@ class ProductCrudController extends CrudController {
     use \Backpack\CRUD\app\Http\Controllers\Operations\DeleteOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\ShowOperation;
 
+    // Additional Operations
+    use \Backpack\CRUD\app\Http\Controllers\Operations\ReorderOperation;
+
+
     /**
      * Configure the CrudPanel object. Apply settings to all operations.
      * 
@@ -54,7 +58,7 @@ class ProductCrudController extends CrudController {
         // CRUD::enableDetailsRow(); //Pro Feature
         CRUD::column('id')->type('my_custom_column');
         CRUD::column('price')->prefix("$")->suffix("!");
-        CRUD::column('image')->type("image");
+        CRUD::column('image')->type("image")->label('Image')->prefix("storage/uploads/products/");
         CRUD::column('name');
         CRUD::column('description');
         CRUD::column('category')->wrapper([
@@ -77,6 +81,20 @@ class ProductCrudController extends CrudController {
          */
     }
 
+    protected function setupReorderOperation()
+    {
+        // define which model attribute will be shown on draggable elements
+        CRUD::set('reorder.label', 'name');
+        // define how deep the admin is allowed to nest the items
+        // for infinite levels, set it to 0
+        CRUD::set('reorder.max_level', 0);
+
+        // if you don't fully trust the input in your database, you can set 
+        // "escaped" to true, so that the label is escaped before being shown
+        // you can also enable it globally in config/backpack/operations/reorder.php
+        CRUD::set('reorder.escaped', true);
+    }
+
     /**
      * Define what happens when the Create operation is loaded.
      * 
@@ -85,7 +103,22 @@ class ProductCrudController extends CrudController {
      */
     protected function setupCreateOperation() {
         CRUD::setValidation(ProductRequest::class);
-        CRUD::setFromDb(); // set fields from db columns.
+        // CRUD::setFromDb(); // set fields from db columns.
+        CRUD::field('name');
+        CRUD::field('description');
+        CRUD::field('category')->inline_create(true);
+        CRUD::field('image')
+            ->type('upload')
+            ->label('Image')
+            ->withFiles([
+                'path' => 'uploads/products'
+            ]);
+
+
+        // This is the PRO Feature, we can't use for free
+        // CRUD::field('prices')
+        //     ->type('repeatable')
+        //     ->label('Price Options');
 
         /**
          * Fields can be defined using the fluent syntax:
@@ -100,6 +133,39 @@ class ProductCrudController extends CrudController {
      * @return void
      */
     protected function setupUpdateOperation() {
+        $this->crud->setOperationSetting("showDeleteButton", backpack_url("/"));
         $this->setupCreateOperation();
+    }
+
+    protected function setupShowOperation() {
+        /*
+            1. Reuse list operation logic.
+            2. Use tabs (also compatible with create/update operations).
+                i.   Make sure you have config (backpack.operations.show.tabsEnabled).
+                ii.  Add 'tab' values to your columns.
+                iii. Not all columns need a tab.
+        */
+        // $this->setupListOperation();
+
+        CRUD::column('id')->label("Product ID")->tab("General");
+        CRUD::column('category')->wrapper([
+            'href' => function ($crud, $column, $entry) {
+                return backpack_url("category/$entry->category_id/show");
+            }
+        ])->tab("General");
+        CRUD::column('name')->tab("General");
+        CRUD::column('price')->tab("General");
+
+        CRUD::column("description")->tab("Content");
+        CRUD::column("image")->type('image')->label("Product Image")->prefix("storage/uploads/products/")->tab("Content");
+
+        CRUD::column('status')->wrapper([
+            'class' => function ($crud, $column, $entry) {
+                return match ($entry->status) {
+                    "DRAFT" => 'badge bg-warning',
+                    default => 'badge bg-success'
+                };
+            },
+        ]);
     }
 }
